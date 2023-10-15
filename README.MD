@@ -1,4 +1,4 @@
-# WhatsApp Sticker Maker App with Vision Subject Lift API
+# WhatsApp Sticker Maker iOS App with Vision Subject Lift API
 
 ![alt text](https://i.ibb.co/jZ7MfC8/promo.png)
 
