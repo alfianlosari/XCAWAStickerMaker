@@ -11,7 +11,9 @@ import SwiftUI
 struct XCAWAStickerMakerApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            NavigationStack {
+                ContentView()
+            }
         }
     }
 }
