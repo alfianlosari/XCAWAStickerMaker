@@ -134,6 +134,7 @@ class ViewModel {
         return UIImage(cgImage: imageHelper.render(ciImage: maskedImage))
     }
     
+    // TODO: Perform in Detached Cancellable Task & Show Loading Indicator in UI
     func sendToWhatsApp() {
         guard isAbleToExportAsStickers,
               let trayOutputImage = trayIcon.imageData?.outputImage
