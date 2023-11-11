@@ -19,6 +19,7 @@
 		8BA60FD52ADAF2A4006056C1 /* SwiftWebP in Frameworks */ = {isa = PBXBuildFile; productRef = 8BA60FD42ADAF2A4006056C1 /* SwiftWebP */; };
 		8BA60FD72ADAF2A4006056C1 /* YYImageLib in Frameworks */ = {isa = PBXBuildFile; productRef = 8BA60FD62ADAF2A4006056C1 /* YYImageLib */; };
 		8BA60FD92ADAF57C006056C1 /* UIImage+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BA60FD82ADAF57C006056C1 /* UIImage+Extension.swift */; };
+		8BB210882AFBE9330096484F /* XCAOpenAIClient in Frameworks */ = {isa = PBXBuildFile; productRef = 8BB210872AFBE9330096484F /* XCAOpenAIClient */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,6 +43,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8BB210882AFBE9330096484F /* XCAOpenAIClient in Frameworks */,
 				8BA60FD72ADAF2A4006056C1 /* YYImageLib in Frameworks */,
 				8BA60FD52ADAF2A4006056C1 /* SwiftWebP in Frameworks */,
 			);
@@ -136,6 +138,7 @@
 			packageProductDependencies = (
 				8BA60FD42ADAF2A4006056C1 /* SwiftWebP */,
 				8BA60FD62ADAF2A4006056C1 /* YYImageLib */,
+				8BB210872AFBE9330096484F /* XCAOpenAIClient */,
 			);
 			productName = XCAWAStickerMaker;
 			productReference = 8BA60FAF2ADADDBE006056C1 /* XCAWAStickerMaker.app */;
@@ -167,6 +170,7 @@
 			mainGroup = 8BA60FA62ADADDBE006056C1;
 			packageReferences = (
 				8BA60FD32ADAF2A4006056C1 /* XCRemoteSwiftPackageReference "SwiftWebP" */,
+				8BB210862AFBE9330096484F /* XCRemoteSwiftPackageReference "XCAOpenAIClient" */,
 			);
 			productRefGroup = 8BA60FB02ADADDBE006056C1 /* Products */;
 			projectDirPath = "";
@@ -427,6 +431,14 @@
 				minimumVersion = 0.1.0;
 			};
 		};
+		8BB210862AFBE9330096484F /* XCRemoteSwiftPackageReference "XCAOpenAIClient" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/alfianlosari/XCAOpenAIClient";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -439,6 +451,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8BA60FD32ADAF2A4006056C1 /* XCRemoteSwiftPackageReference "SwiftWebP" */;
 			productName = YYImageLib;
+		};
+		8BB210872AFBE9330096484F /* XCAOpenAIClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8BB210862AFBE9330096484F /* XCRemoteSwiftPackageReference "XCAOpenAIClient" */;
+			productName = XCAOpenAIClient;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -6,43 +6,129 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct ContentView: View {
     
     let columns = [GridItem(.adaptive(minimum: width, maximum: width), spacing: spacing)]
     @State var vm = ViewModel()
-    
-    var body: some View {
-        ScrollView {
-            HStack {
-                ImagePicker {
-                    ImageContainerView(badgeText: "IC", image: vm.showOriginalImage ? vm.trayIcon.inputImage : vm.trayIcon.outputImage)
-                } onSelectedImage: { image in
-                    vm.onInputImageSelected(image, sticker: vm.trayIcon)
-                }
-                
-                Toggle("Show Original", isOn: $vm.showOriginalImage)
 
+    var body: some View {
+        List {
+            HStack(alignment: .top, spacing: 16) {
+                imagePickerMenu(badgeText: "IC", sticker: vm.trayIcon)
+                Toggle("Show background", isOn: $vm.showOriginalImage)
             }
-            .padding(32)
+            .listRowSeparator(.hidden)
+            
+            generateAISection
             
             LazyVGrid(columns: columns, spacing: spacing) {
                 ForEach(vm.stickers) { sticker in
-                    ImagePicker {
-                        ImageContainerView(badgeText: String(sticker.pos + 1), image: vm.showOriginalImage ? sticker.inputImage : sticker.outputImage)
-                    } onSelectedImage: { image in
-                        vm.onInputImageSelected(image, sticker: sticker)
-                    }
+                    imagePickerMenu(badgeText: String(sticker.pos + 1), sticker: sticker)
                 }
             }
+            .listRowSeparator(.hidden)
         }
-        .navigationTitle("XCA WA Sticker Maker")
+        .listStyle(.plain)
+        .scrollDismissesKeyboard(.immediately)
+        .navigationTitle("XCA DALL·E 3 AI WA Sticker Maker")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Export") {
                     vm.sendToWhatsApp()
                 }
                 .disabled(!vm.isAbleToExportAsStickers)
+            }
+        }
+        .photosPicker(isPresented: $vm.shouldPresentPhotoPicker, selection: $vm.selectedPhotoPickerItem, matching: .images)
+        .onChange(of: vm.selectedPhotoPickerItem) { loadInputImage(fromPhotosPickerItem: $1) }
+    }
+    
+    var generateAISection: some View {
+        Section {
+            DisclosureGroup("DALL·E 3 AI sticker generation ✨", isExpanded: $vm.isAISectionExpanded) {
+                VStack(alignment: .leading, spacing: 8) {
+                    TextField("Enter prompt", text: $vm.promptText, axis: .vertical)
+                        .textFieldStyle(.roundedBorder)
+                        .lineLimit(4, reservesSpace: true)
+                    
+                    HStack(spacing: 32) {
+                        Toggle("Vivid", isOn: $vm.isVivid)
+                        Spacer()
+                        Toggle("HD", isOn: $vm.isHD)
+                    }
+                    
+                    HStack {
+                        Text(String(vm.minImagesInBatch))
+                        Slider(value: $vm.imagesInBatch, in: Double(vm.minImagesInBatch)...Double(vm.maxImagesInBatch), step: 1)
+                            .frame(width: 128)
+                        Text(String(vm.maxImagesInBatch))
+                        Spacer()
+                        Button("Generate \(Int(vm.imagesInBatch)) in Batch") {
+                            vm.generateDallE3ImagesInBatch()
+                        }
+                        .disabled(!vm.isPromptValid)
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+            }
+        }
+    }
+    
+    func imagePickerMenu(badgeText: String, sticker: Sticker) -> some View {
+        Menu {
+            Button("Select from Photo Library") {
+                vm.selectedStickerForPhotoPicker = sticker
+                vm.shouldPresentPhotoPicker = true
+            }
+            
+            if vm.isPromptValid {
+                Button("Generate with OpenAI DALL·E 3") {
+                    vm.generateDallE3Image(sticker: sticker)
+                }
+            }
+            
+            if sticker.imageData != nil {
+                Button("Delete", role: .destructive) {
+                    vm.deleteImage(sticker: sticker)
+                }
+            }
+            
+        } label: {
+            ImageContainerView(badgeText: badgeText, sticker: sticker, showOriginalImage: vm.showOriginalImage)
+        }
+        .disabled(sticker.isGeneratingImage)
+    }
+    
+    private func loadInputImage(fromPhotosPickerItem item: PhotosPickerItem?) {
+        vm.selectedPhotoPickerItem = nil
+        guard let item, let sticker = vm.selectedStickerForPhotoPicker else { return }
+        item.loadTransferable(type: Data.self) { result in
+            switch result {
+            case .failure(let error):
+                print("Failed to load: \(error)")
+                return
+                
+            case .success(let _data):
+                guard let data = _data else {
+                    print("Failed to load image data")
+                    return
+                }
+                
+                guard var image = CIImage(data: data) else {
+                    print("Failed to create image from selected photo")
+                    return
+                }
+                
+                if let orientation = image.properties["Orientation"] as? Int32, orientation != 1 {
+                    image = image.oriented(forExifOrientation: orientation)
+                }
+                
+                DispatchQueue.main.async {
+                    vm.onInputImageSelected(image, sticker: sticker)
+                }
             }
         }
     }

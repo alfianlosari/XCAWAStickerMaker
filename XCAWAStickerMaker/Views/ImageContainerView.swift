@@ -13,11 +13,16 @@ let spacing: CGFloat = 20
 struct ImageContainerView: View {
     
     var badgeText: String?
-    var image: Image?
+    var sticker: Sticker
+    var showOriginalImage: Bool = false
+
+    var image: Image? {
+        showOriginalImage ? sticker.inputImage : sticker.outputImage
+    }
     
     var body: some View {
         ZStack(alignment: .topLeading) {
-            if image == nil {
+            if (image == nil && !sticker.isGeneratingImage && sticker.errorText == nil) {
                 Image(systemName: "photo.badge.plus")
                     .imageScale(.large)
                     .foregroundStyle(Color.accentColor)
@@ -43,6 +48,20 @@ struct ImageContainerView: View {
                     .padding([.leading, .top], 8)
             }
             
+            if sticker.isGeneratingImage {
+                ProgressView("🤖✨")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(16)
+            }
+            
+            if let errorText = sticker.errorText {
+                Text(errorText)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .lineLimit(3)
+            }
+            
         }
         .frame(width: width, height: width)
         .overlay {
@@ -54,7 +73,7 @@ struct ImageContainerView: View {
 
 #Preview {
     VStack {
-        ImageContainerView()
-        ImageContainerView(badgeText: "12", image: nil)
+        ImageContainerView(sticker: .init())
+        ImageContainerView(badgeText: "12", sticker: .init())
     }
 }

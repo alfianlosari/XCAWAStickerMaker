@@ -11,6 +11,8 @@ import SwiftUI
 import CoreImage
 import UIKit
 import SwiftWebP
+import XCAOpenAIClient
+import PhotosUI
 
 @Observable
 class ViewModel {
@@ -22,34 +24,107 @@ class ViewModel {
     var trayIcon = Sticker(isTrayIcon: true)
     var stickers: [Sticker] = (0...29).map { i in Sticker(pos: i) }
     
+    let openAIClient = OpenAIClient(apiKey: "YOUR_API_KEY")
+    
     var showOriginalImage = false
+    var shouldPresentPhotoPicker = false
+    var selectedPhotoPickerItem: PhotosPickerItem?
+    var selectedStickerForPhotoPicker: Sticker?
+    var promptText = ""
+    let minImagesInBatch = 3
+    let maxImagesInBatch = 30
+    var imagesInBatch: Double = 3
+    var isHD = false
+    var isVivid = true
+    var isAISectionExpanded = true
+    
     let imageHelper = ImageVisionHelper()
+    
+    var isPromptValid: Bool { promptText.trimmingCharacters(in: .whitespacesAndNewlines).count > 1}
     
     var isAbleToExportAsStickers: Bool {
         let stickersCount = self.stickers.filter { $0.outputImage != nil }.count
         return stickersCount > 2 && trayIcon.outputImage != nil
     }
     
-    func onInputImageSelected(_ image: CIImage, sticker: Sticker) {
-        self.serialQueue.async { [unowned self] in
-            let inputCIImage = image
-            let inputImage = UIImage(cgImage: imageHelper.render(ciImage: inputCIImage))
-            let outputImage = self.removeImageBackground(input: inputCIImage)
-            var sticker = sticker
-            
-            let imageData = ImageData(inputCIImage: inputCIImage, inputImage: inputImage, outputImage: outputImage)
-            sticker.state = .selected(imageData)
-            
-            DispatchQueue.main.async { [unowned self] in
-                if sticker.isTrayIcon {
-                    self.trayIcon = sticker
-                } else {
-                    self.stickers[sticker.pos] = sticker
+    func deleteImage(sticker: Sticker) {
+        updateSticker(sticker) { $0.state = .none }
+    }
+    
+    func generateDallE3ImagesInBatch() {
+        guard promptText.count > 1 else { return }
+        (0..<Int(imagesInBatch)).forEach { index in
+            self.stickers[index].cancelOngoingTask()
+            generateDallE3Image(sticker: self.stickers[index])
+        }
+    }
+    
+    func generateDallE3ImageTask(prompt: String, sticker: Sticker) -> Task<Void, Never> {
+        Task {
+            do {
+                let imageResponse = try await self.openAIClient.generateDallE3Image(
+                    prompt: prompt, quality: isHD ? .hd : .standard, style: isVivid ? .vivid : .natural)
+                try Task.checkCancellation()
+                guard let urlString = imageResponse.url,
+                      let url = URL(string: urlString)
+                else {
+                    throw "Image response is null"
+                }
+                let (data, _) = try await URLSession.shared.data(from: url)
+                guard let image = CIImage(data: data) else {
+                    throw "failed to download image"
+                }
+                let imageData = self.generateImageData(image)
+                try Task.checkCancellation()
+                self.updateSticker(sticker, shouldSwitchToUIThread: true) {
+                    $0.state = .completed(imageData)
+                    if self.trayIcon.imageData == nil {
+                        self.updateSticker(self.trayIcon) {
+                            $0.state = .completed(imageData)
+                        }
+                    }
+                }
+            } catch {
+                if error is CancellationError { return }
+                self.updateSticker(sticker, shouldSwitchToUIThread: true) {
+                    $0.state = .failure(error)
                 }
             }
-           
         }
-      
+    }
+    
+    func generateDallE3Image(sticker: Sticker) {
+        guard isPromptValid else { return }
+        let task = generateDallE3ImageTask(prompt: promptText, sticker: sticker)
+        self.updateSticker(sticker) {
+            $0.state = .generating(task)
+        }
+    }
+    
+    func generateImageData(_ image: CIImage) -> ImageData {
+        let inputCIImage = image
+        let inputImage = UIImage(cgImage: imageHelper.render(ciImage: inputCIImage))
+        let outputImage = self.removeImageBackground(input: inputCIImage)
+        let imageData = ImageData(inputCIImage: inputCIImage, inputImage: inputImage, outputImage: outputImage)
+        return imageData
+    }
+    
+    func onInputImageSelected(_ image: CIImage, sticker: Sticker) {
+        let task = Task {
+            do {
+                let imageData = self.generateImageData(image)
+                try Task.checkCancellation()
+                self.updateSticker(sticker) {
+                    $0.state = .completed(imageData)
+                }
+            } catch let error {
+                if error is CancellationError { return }
+                self.updateSticker(sticker) {
+                    $0.state = .failure(error)
+                }
+            }
+        }
+        self.updateSticker(sticker) { $0.state = .generating(task) }
     }
     
     func removeImageBackground(input: CIImage) -> UIImage? {
@@ -111,6 +186,24 @@ class ViewModel {
             if UIApplication.shared.canOpenURL(URL(string: "whatsapp://")!) {
                 UIApplication.shared.open(ViewModel.whatsAPPURL)
             }
+        }
+    }
+    
+    func updateSticker(_ sticker: Sticker, shouldSwitchToUIThread: Bool = false, updateHandler: (( _ sticker: inout Sticker) -> Void)? = nil) {
+        func update() {
+            var sticker = sticker
+            updateHandler?(&sticker)
+            if sticker.isTrayIcon {
+                self.trayIcon = sticker
+            } else {
+                self.stickers[sticker.pos] = sticker
+            }
+        }
+        
+        if shouldSwitchToUIThread {
+            DispatchQueue.main.async { update() }
+        } else {
+            update()
         }
     }
     

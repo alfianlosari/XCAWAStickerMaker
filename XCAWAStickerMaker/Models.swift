@@ -12,7 +12,9 @@ import SwiftUI
 
 enum StickerState {
     case none
-    case selected(ImageData)
+    case generating(Task<Void, Never>)
+    case completed(ImageData)
+    case failure(Error)
 }
 
 struct ImageData {
@@ -29,10 +31,17 @@ struct Sticker: Identifiable {
     var isTrayIcon = false
 
     var imageData: ImageData? {
-        if case let .selected(imageData) = state {
+        if case let .completed(imageData) = state {
             return imageData
         }
         return nil
+    }
+    
+    var isGeneratingImage: Bool {
+        if case .generating = state {
+            return true
+        }
+        return false
     }
     
     var inputImage: Image? {
@@ -45,5 +54,22 @@ struct Sticker: Identifiable {
         return Image(uiImage: outputImage)
     }
     
+    var errorText: String? {
+        if case let .failure(error) = state {
+            return error.localizedDescription
+        }
+        return nil
+    }
+    
+    var ongoingTask: Task<Void, Never>? {
+        if case let .generating(task) = state {
+            return task
+        }
+        return nil
+    }
+    
+    func cancelOngoingTask() {
+        self.ongoingTask?.cancel()
+    }
    
 }
