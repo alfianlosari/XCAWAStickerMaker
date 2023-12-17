@@ -23,9 +23,27 @@ class ViewModel {
     let serialQueue = DispatchSerialQueue(label: "com.xca.bgserial")
     var trayIcon = Sticker(isTrayIcon: true)
     var stickers: [Sticker] = (0...29).map { i in Sticker(pos: i) }
-    
     let openAIClient = OpenAIClient(apiKey: "YOUR_API_KEY")
+
+    var gpt4VisionPromptTask: Task<Void, Never>?
+    var selectedAIGenerateOption = AIGenerateOption.textPrompt
+    var selectedGPT4VisionSourceImage: UIImage?
+    var gpt4PromptPhase = GPT4VisionPromptPhase.initial
     
+    var isPromptValid: Bool {
+        switch selectedAIGenerateOption {
+        case .gpt4Vision: return selectedGPT4VisionSourceImage != nil
+        case .textPrompt: return promptText.trimmingCharacters(in: .whitespacesAndNewlines).count > 1
+        }
+    }
+    
+    var isPromptingGPT4Vision: Bool {
+        if case .prompting = gpt4PromptPhase {
+            return true
+        }
+        return false
+    }
+
     var showOriginalImage = false
     var shouldPresentPhotoPicker = false
     var selectedPhotoPickerItem: PhotosPickerItem?
@@ -38,10 +56,10 @@ class ViewModel {
     var isVivid = true
     var isAISectionExpanded = true
     
+    
     let imageHelper = ImageVisionHelper()
     
-    var isPromptValid: Bool { promptText.trimmingCharacters(in: .whitespacesAndNewlines).count > 1}
-    
+
     var isAbleToExportAsStickers: Bool {
         let stickersCount = self.stickers.filter { $0.outputImage != nil }.count
         return stickersCount > 2 && trayIcon.outputImage != nil
@@ -52,15 +70,39 @@ class ViewModel {
     }
     
     func generateDallE3ImagesInBatch() {
-        guard promptText.count > 1 else { return }
-        (0..<Int(imagesInBatch)).forEach { index in
-            self.stickers[index].cancelOngoingTask()
-            generateDallE3Image(sticker: self.stickers[index])
+        guard isPromptValid else { return }
+        gpt4VisionPromptTask?.cancel()
+        switch selectedAIGenerateOption {
+        case .textPrompt:
+            (0..<Int(imagesInBatch)).forEach { index in
+                self.stickers[index].cancelOngoingTask()
+                generateDallE3Image(promptText: self.promptText, sticker: self.stickers[index])
+            }
+            
+        case .gpt4Vision:
+            gpt4VisionPromptTask = Task { @MainActor in
+                guard let image = self.selectedGPT4VisionSourceImage else { return }
+                do {
+                    self.gpt4PromptPhase = .prompting
+                    let promptText = try await openAIClient.promptChatGPTVision(imageData: image.scaleToFit(targetSize: .init(width: 512, height: 512)).scaledJPGData(), detail: .high)
+                    try Task.checkCancellation()
+                    self.gpt4PromptPhase = .success(promptText)
+                    print(promptText)
+                    (0..<Int(imagesInBatch)).forEach { index in
+                        self.stickers[index].cancelOngoingTask()
+                        generateDallE3Image(promptText: promptText, sticker: self.stickers[index])
+                    }
+                } catch {
+                    if Task.isCancelled { return }
+                    self.gpt4PromptPhase = .failure(error)
+                    print(error.localizedDescription)
+                }
+            }
         }
     }
     
     func generateDallE3ImageTask(prompt: String, sticker: Sticker) -> Task<Void, Never> {
-        Task {
+        Task { @MainActor in
             do {
                 let imageResponse = try await self.openAIClient.generateDallE3Image(
                     prompt: prompt, quality: isHD ? .hd : .standard, style: isVivid ? .vivid : .natural)
@@ -93,8 +135,8 @@ class ViewModel {
         }
     }
     
-    func generateDallE3Image(sticker: Sticker) {
-        guard isPromptValid else { return }
+    func generateDallE3Image(promptText: String, sticker: Sticker) {
+        
         let task = generateDallE3ImageTask(prompt: promptText, sticker: sticker)
         self.updateSticker(sticker) {
             $0.state = .generating(task)

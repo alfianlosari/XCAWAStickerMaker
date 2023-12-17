@@ -10,6 +10,20 @@ import CoreImage
 import UIKit
 import SwiftUI
 
+enum GPT4VisionPromptPhase {
+    case initial
+    case prompting
+    case success(String)
+    case failure(Error)
+}
+
+enum AIGenerateOption: String, Identifiable, Hashable, CaseIterable {
+    var id: Self { self }
+    
+    case textPrompt = "Text Prompt"
+    case gpt4Vision = "GPT-4 Vision"
+}
+
 enum StickerState {
     case none
     case generating(Task<Void, Never>)

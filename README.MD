@@ -7,7 +7,7 @@
 - Automatic background removal of your image so it can be used as sticker.
 - Export sticker packs to WhatsApp (max 30 stickers)
 - Utilize Apple native Vision API for subject lifting (works offline)
-- Generate sticker with prompt using OpenAI DALL·E 3 API.
+- Generate sticker with text prompt or GPT-4 Vision image prompt using OpenAI DALL·E 3 API.
 
 ## Requirements
 - Xcode 15 with iOS 17 SDK
@@ -17,3 +17,4 @@ You can check the full video tutorial on building this from scratch.
 
 [YouTube](https://youtu.be/K68UqsB9ZIY)
 [YouTube part 2 - AI Gen](https://youtu.be/XiuFjYPeZiY)
+[YouTube part 3 - GPT4-V AI Gen](https://youtu.be/TZcxrqZfrz0)

@@ -49,10 +49,51 @@ struct ContentView: View {
     var generateAISection: some View {
         Section {
             DisclosureGroup("DALL·E 3 AI sticker generation ✨", isExpanded: $vm.isAISectionExpanded) {
-                VStack(alignment: .leading, spacing: 8) {
-                    TextField("Enter prompt", text: $vm.promptText, axis: .vertical)
-                        .textFieldStyle(.roundedBorder)
-                        .lineLimit(4, reservesSpace: true)
+                VStack(alignment: .leading, spacing: 16) {
+                    Picker("AI Generate Option", selection: $vm.selectedAIGenerateOption) {
+                        ForEach(AIGenerateOption.allCases) {
+                            Text($0.rawValue).id($0)
+                        }
+                    }.pickerStyle(.segmented)
+                    .disabled(vm.isPromptingGPT4Vision)
+                    
+                    switch vm.selectedAIGenerateOption {
+                    case .textPrompt:
+                        TextField("Enter prompt", text: $vm.promptText, axis: .vertical)
+                            .textFieldStyle(.roundedBorder)
+                            .lineLimit(4, reservesSpace: true)
+                    case .gpt4Vision:
+                        HStack(alignment: .top, spacing: 8) {
+                            
+                            if case .prompting = vm.gpt4PromptPhase {
+                                ProgressView("Prompting GPT4...")
+
+                            } else {
+                                Text("Generate Image based on source image input")
+                            }
+                            
+                            Spacer()
+                            ImagePicker {
+                                ZStack {
+                                    if let image = vm.selectedGPT4VisionSourceImage {
+                                        Image(uiImage: image)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .clipped()
+                                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    }
+                                }
+                                .frame(width: width, height: width)
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color.pink, style: StrokeStyle(lineWidth: 3, dash: [8]))
+                                }
+                            } onSelectedImage: {
+                                self.vm.selectedGPT4VisionSourceImage = UIImage(cgImage: vm.imageHelper.render(ciImage: $0))
+                            }
+                            .disabled(vm.isPromptingGPT4Vision)
+                        }
+                    }
                     
                     HStack(spacing: 32) {
                         Toggle("Vivid", isOn: $vm.isVivid)
@@ -69,7 +110,7 @@ struct ContentView: View {
                         Button("Generate \(Int(vm.imagesInBatch)) in Batch") {
                             vm.generateDallE3ImagesInBatch()
                         }
-                        .disabled(!vm.isPromptValid)
+                        .disabled(!vm.isPromptValid || vm.isPromptingGPT4Vision)
                         .buttonStyle(.borderedProminent)
                     }
                 }
@@ -84,9 +125,10 @@ struct ContentView: View {
                 vm.shouldPresentPhotoPicker = true
             }
             
-            if vm.isPromptValid {
+            if vm.selectedAIGenerateOption == .textPrompt && vm.isPromptValid {
                 Button("Generate with OpenAI DALL·E 3") {
-                    vm.generateDallE3Image(sticker: sticker)
+                    guard vm.isPromptValid else { return }
+                    vm.generateDallE3Image(promptText: vm.promptText, sticker: sticker)
                 }
             }
             

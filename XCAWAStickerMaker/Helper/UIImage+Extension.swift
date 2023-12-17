@@ -44,4 +44,16 @@ extension UIImage {
         return resized.pngData()!
     }
     
+    func scaledJPGData(compressionQuality: CGFloat = 0.5) -> Data {
+        let targetSize = CGSize(
+            width: size.width / UIScreen.main.scale,
+            height: size.height / UIScreen.main.scale)
+        
+        let renderer = UIGraphicsImageRenderer(size: targetSize)
+        let resized = renderer.image { _ in
+            self.draw(in: .init(origin: .zero, size: targetSize))
+        }
+        return resized.jpegData(compressionQuality: compressionQuality)!
+    }
+    
 }

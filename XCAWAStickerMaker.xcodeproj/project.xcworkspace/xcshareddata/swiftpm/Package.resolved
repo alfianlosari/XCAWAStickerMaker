@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/mattpolzin/OpenAPIKit.git",
       "state" : {
-        "revision" : "f93e9bd8ec7b9d58f6a86e303fd5f71c7088f9ae",
-        "version" : "3.0.1"
+        "revision" : "b00b08d05e6fba0e156c06be3332b9774e172afd",
+        "version" : "3.1.1"
       }
     },
     {
@@ -34,6 +34,15 @@
       "state" : {
         "revision" : "8f4d2753f0e4778c76d5f05ad16c74f707390531",
         "version" : "1.2.3"
+      }
+    },
+    {
+      "identity" : "swift-collections",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-collections",
+      "state" : {
+        "revision" : "a902f1823a7ff3c9ab2fba0f992396b948eda307",
+        "version" : "1.0.5"
       }
     },
     {
@@ -59,8 +68,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-openapi-generator",
       "state" : {
-        "revision" : "d2ead56bf9d241d8fb34a7728981964e433682a1",
-        "version" : "0.3.4"
+        "revision" : "e30691e5d3613994b04b142df5c52158d066b0bb",
+        "version" : "1.0.0-alpha.1"
       }
     },
     {
@@ -68,8 +77,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-openapi-runtime",
       "state" : {
-        "revision" : "a51b3bd6f2151e9a6f792ca6937a7242c4758768",
-        "version" : "0.3.6"
+        "revision" : "7d1644b125c02be1bedcfe1a69b58fae881b2393",
+        "version" : "1.0.0-alpha.1"
       }
     },
     {
@@ -77,8 +86,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-openapi-urlsession",
       "state" : {
-        "revision" : "2a676df437aeb50ddf8ecb0ad327d14f078d6cb6",
-        "version" : "0.3.0"
+        "revision" : "d038c8965f4a9d436da905a6bca99c3121654288",
+        "version" : "1.0.0-alpha.1"
       }
     },
     {
@@ -96,7 +105,7 @@
       "location" : "https://github.com/alfianlosari/XCAOpenAIClient",
       "state" : {
         "branch" : "main",
-        "revision" : "ef2079a811bc050c5c13f5d617406762aae6b461"
+        "revision" : "12d114d95fde73c489acfb1966747a53842fab79"
       }
     },
     {
